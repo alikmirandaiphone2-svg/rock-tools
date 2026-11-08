@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rock Tools | Campo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        industrial: {
+                            900: '#111318',
+                            800: '#1a1d24',
+                            700: '#262a35',
+                            600: '#353b49',
+                            gold: '#f59e0b',
+                            amber: '#d97706',
+                            bright: '#fbbf24',
+                            accent: '#10b981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111318;
+            color: #f3f4f6;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1d24;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353b49;
+            border-radius: 3px;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
+            .print-card { border: 1px solid #ccc !important; background: white !important; color: black !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-industrial-900 text-gray-100 min-h-screen pb-20 md:pb-6 flex flex-col antialiased selection:bg-amber-500 selection:text-black">
+
+    <!-- Top Navigation & Fleet Header -->
+    <header class="no-print bg-industrial-800 border-b border-industrial-700 sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <!-- Brand Title -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="bg-amber-500 text-black px-2.5 py-1.5 rounded-lg font-black tracking-tighter text-sm flex items-center justify-center shadow-lg shadow-amber-500/20 select-none">
+                            RT
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold leading-none tracking-tight flex items-center gap-1.5">
+                                ROCK TOOLS <span class="text-amber-500 font-mono text-xs px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">CAMPO</span>
+                            </h1>
+                            <p class="text-xs text-gray-400 mt-0.5">Inspeção & ROP de Perfuração Subterrânea</p>
+                        </div>
+                    </div>
+                    <!-- Quick status indicator -->
+                    <span class="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Offline Ready
+                    </span>
+                </div>
+
+                <!-- Active Fleet Equipment Switcher -->
+                <div class="flex items-center gap-2 bg-industrial-900 p-1.5 rounded-lg border border-industrial-700">
+                    <i data-lucide="truck" class="w-4 h-4 text-amber-500 ml-1.5 flex-shrink-0"></i>
+                    <select id="activeRigSelect" onchange="changeActiveRig(this.value)" class="bg-transparent text-sm text-amber-400 font-semibold focus:outline-none cursor-pointer w-full sm:w-auto">
+                        <!-- Populated dynamically -->
+                    </select>
+                    <button onclick="openRigModal()" title="Gerenciar Perfuratrizes" class="p-1.5 text-gray-400 hover:text-white hover:bg-industrial-700 rounded-md transition-colors">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-5">
+
+        <!-- Navigation Tabs (Desktop & Tablet) -->
+        <div class="no-print hidden md:flex items-center space-x-2 border-b border-industrial-700 mb-6 pb-2 overflow-x-auto">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all text-amber-400 bg-industrial-800 border border-amber-500/30">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+            </button>
+            <button onclick="switchTab('furos')" id="tab-furos" class="tab-btn flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-gray-200 hover:bg-industrial-800 rounded-lg transition-all">
+                <i data-lucide="gauge" class="w-4 h-4"></i> ROP & Furos
+            </button>
+            <button onclick="switchTab('ferramentas')" id="tab-ferramentas" class="tab-btn flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-gray-200 hover:bg-industrial-800 rounded-lg transition-all">
+                <i data-lucide="wrench" class="w-4 h-4"></i> Consumíveis & Inspeção
+            </button>
+            <button onclick="switchTab('checklist')" id="tab-checklist" class="tab-btn flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-gray-200 hover:bg-industrial-800 rounded-lg transition-all">
+                <i data-lucide="clipboard-check" class="w-4 h-4"></i> Checklist Diário
+            </button>
+            <button onclick="switchTab('historico')" id="tab-historico" class="tab-btn flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-gray-200 hover:bg-industrial-800 rounded-lg transition-all">
+                <i data-lucide="file-text" class="w-4 h-4"></i> Histórico & Relatórios
+            </button>
+        </div>
+
+        <!-- ================= TAB: DASHBOARD ================= -->
+        <section id="sec-dashboard" class="tab-content space-y-6">
+            <!-- Equipment info banner -->
+            <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+                <div class="flex items-center space-x-3">
+                    <div class="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl">
+                        <i data-lucide="hard-hat" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 uppercase tracking-wider font-mono">Perfuratriz Ativa</div>
+                        <h2 id="dashRigName" class="text-xl font-bold text-white flex items-center gap-2">
+                            ---
+                        </h2>
+                        <p id="dashRigMeta" class="text-xs text-gray-400 mt-0.5">Nível: --- | Modelo: ---</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="switchTab('furos')" class="flex-1 md:flex-none px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-bold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-md">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Novo Registro ROP
+                    </button>
+                    <button onclick="switchTab('ferramentas')" class="flex-1 md:flex-none px-4 py-2.5 bg-industrial-700 hover:bg-industrial-600 text-white font-medium text-sm rounded-lg flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="search" class="w-4 h-4"></i> Nova Inspeção
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-4 flex flex-col justify-between">
+                    <div class="flex justify-between items-start text-gray-400">
+                        <span class="text-xs font-semibold uppercase">Média ROP (m/h)</span>
+                        <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiAvgRop" class="text-2xl font-black text-amber-400 mono">0.0</div>
+                        <span class="text-xs text-gray-400">Velocidade média acumulada</span>
+                    </div>
+                </div>
+
+                <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-4 flex flex-col justify-between">
+                    <div class="flex justify-between items-start text-gray-400">
+                        <span class="text-xs font-semibold uppercase">Total Perfurado</span>
+                        <i data-lucide="ruler" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiTotalMeters" class="text-2xl font-black text-emerald-400 mono">0.0 m</div>
+                        <span class="text-xs text-gray-400">Furos cadastrados no app</span>
+                    </div>
+                </div>
+
+                <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-4 flex flex-col justify-between">
+                    <div class="flex justify-between items-start text-gray-400">
+                        <span class="text-xs font-semibold uppercase">Ferramentas Ativas</span>
+                        <i data-lucide="disc" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiActiveTools" class="text-2xl font-black text-blue-400 mono">0</div>
+                        <span class="text-xs text-gray-400">Shanks, Hastes & Bits em uso</span>
+                    </div>
+                </div>
+
+                <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-4 flex flex-col justify-between">
+                    <div class="flex justify-between items-start text-gray-400">
+                        <span class="text-xs font-semibold uppercase">Inspeções / Alertas</span>
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+                    </div>
+                    <div class="mt-3">
+                        <div id="kpiAlertCount" class="text-2xl font-black text-rose-400 mono">0</div>
+                        <span class="text-xs text-gray-400">Descartes / Afiação necessária</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Lists & Active Tools Summary -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Holes / ROP Log -->
+                <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-white flex items-center gap-2 text-sm uppercase tracking-wider">
+                            <i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> Últimas Perfurações (ROP)
+                        </h3>
+                        <button onclick="switchTab('furos')" class="text-xs text-amber-500 hover:underline">Ver tudo</button>
+                    </div>
+                    <div id="dashRecentHoles" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Active Consumables Status -->
+                <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-white flex items-center gap-2 text-sm uppercase tracking-wider">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-amber-500"></i> Status dos Consumíveis
+                        </h3>
+                        <button onclick="switchTab('ferramentas')" class="text-xs text-amber-500 hover:underline">Gerenciar</button>
+                    </div>
+                    <div id="dashToolsSummary" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB: FUROS / ROP ================= -->
+        <section id="sec-furos" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Form: Registro de Furo -->
+                <div class="lg:col-span-1 bg-industrial-800 border border-industrial-700 rounded-xl p-5 shadow-lg space-y-4">
+                    <div class="border-b border-industrial-700 pb-3">
+                        <h3 class="font-bold text-white text-base flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-5 h-5 text-amber-500"></i> Novo Cadastro de Furo
+                        </h3>
+                        <p class="text-xs text-gray-400">Insira os parâmetros de perfuração em tempo real.</p>
+                    </div>
+
+                    <form id="holeForm" onsubmit="saveHole(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-300 mb-1">Identificação / ID do Furo *</label>
+                            <input type="text" id="holeId" required placeholder="Ex: F-102 / Stope 45" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Profundidade (m) *</label>
+                                <input type="number" step="0.1" id="holeDepth" required oninput="calculateROP()" placeholder="Ex: 3.2" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Tempo (min : seg) *</label>
+                                <div class="flex gap-1">
+                                    <input type="number" id="holeMin" min="0" placeholder="Min" required oninput="calculateROP()" class="w-1/2 bg-industrial-900 border border-industrial-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                                    <input type="number" id="holeSec" min="0" max="59" placeholder="Seg" required oninput="calculateROP()" class="w-1/2 bg-industrial-900 border border-industrial-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Calculation Display -->
+                        <div class="bg-industrial-900/80 border border-amber-500/30 p-3 rounded-lg flex items-center justify-between">
+                            <div>
+                                <div class="text-[10px] uppercase text-gray-400 font-mono">ROP Calculado</div>
+                                <div id="calcRopVal" class="text-lg font-black text-amber-400 mono">0.0 m/h</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] uppercase text-gray-400 font-mono">Segundos / Metro</div>
+                                <div id="calcSpmVal" class="text-sm font-bold text-emerald-400 mono">0 s/m</div>
+                            </div>
+                        </div>
+
+                        <!-- Pressures Section -->
+                        <div class="border-t border-industrial-700 pt-3">
+                            <span class="text-xs font-bold text-gray-300 uppercase tracking-wider block mb-2">Pressões de Operação (Bar)</span>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">Percussão</label>
+                                    <input type="number" id="pressPerc" placeholder="180" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-500 mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">Avanço</label>
+                                    <input type="number" id="pressFeed" placeholder="85" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-500 mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">Rotação</label>
+                                    <input type="number" id="pressRot" placeholder="55" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-500 mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tool Linkage -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-300 mb-1">Vincular Coroa / Bit Utilizada</label>
+                            <select id="holeToolLink" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                                <option value="">Sem vínculo específico</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-sm rounded-lg transition-all shadow-lg flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i> Salvar Registro de Furo
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Table: Furos Registrados -->
+                <div class="lg:col-span-2 bg-industrial-800 border border-industrial-700 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h3 class="font-bold text-white text-base">Registros de Performance de Perfuração</h3>
+                                <p class="text-xs text-gray-400">Histórico de ROP para o equipamento selecionado.</p>
+                            </div>
+                            <input type="text" id="searchHole" onkeyup="renderHoles()" placeholder="Filtrar por ID do furo..." class="bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-amber-500">
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-industrial-900 text-gray-400 uppercase font-mono text-[10px]">
+                                    <tr>
+                                        <th class="p-3">Data/Hora</th>
+                                        <th class="p-3">Furo ID</th>
+                                        <th class="p-3">Prof. (m)</th>
+                                        <th class="p-3">Tempo</th>
+                                        <th class="p-3">ROP (m/h)</th>
+                                        <th class="p-3">Pressões (P/A/R)</th>
+                                        <th class="p-3 text-right">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="holesTableBody" class="divide-y divide-industrial-700">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="emptyHolesState" class="py-12 text-center text-gray-500 hidden">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-sm">Nenhum furo cadastrado para esta máquina ainda.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB: FERRAMENTAS / INSPEÇÃO ================= -->
+        <section id="sec-ferramentas" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Registered Consumables & Register Modal/Form -->
+                <div class="lg:col-span-1 bg-industrial-800 border border-industrial-700 rounded-xl p-5 shadow-lg space-y-4">
+                    <div class="border-b border-industrial-700 pb-3">
+                        <h3 class="font-bold text-white text-base flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-5 h-5 text-amber-500"></i> Cadastrar Consumível / Ferramenta
+                        </h3>
+                        <p class="text-xs text-gray-400">Rastreie hastes, tubos, bits, shanks por PN e Série.</p>
+                    </div>
+
+                    <form id="toolForm" onsubmit="saveTool(event)" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Nº de Série *</label>
+                                <input type="text" id="toolSerial" required placeholder="Ex: BIT-99482" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Part Number (PN) *</label>
+                                <input type="text" id="toolPN" required placeholder="Ex: 7832-6567-S70" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Tipo de Ferramenta *</label>
+                                <select id="toolType" required class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                                    <option value="Punho">Punho (Shank Adapter)</option>
+                                    <option value="Haste">Haste de Perfuração</option>
+                                    <option value="Tubo">Tubo de Perfuração</option>
+                                    <option value="Bit">Bit (Coroa)</option>
+                                    <option value="Alargador">Alargador (Reaming Bit)</option>
+                                    <option value="Luva">Luva de Acoplamento</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Tipo de Rosca *</label>
+                                <select id="toolThread" required class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                                    <option value="Alpha 340®">Alpha 340®</option>
+                                    <option value="Alpha 360®">Alpha 360®</option>
+                                    <option value="ST58">ST58</option>
+                                    <option value="CT55">CT55</option>
+                                    <option value="R32">R32</option>
+                                    <option value="T38">T38</option>
+                                    <option value="T45">T45</option>
+                                    <option value="T51">T51</option>
+                                    <option value="ST68">ST68</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Diâmetro (mm)</label>
+                                <input type="number" id="toolDiameter" placeholder="Ex: 89" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Metragem Inicial (m)</label>
+                                <input type="number" id="toolMeters" placeholder="0" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-sm rounded-lg transition-all shadow-md flex items-center justify-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Adicionar ao Inventário
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Inspection & Condition Management Panel -->
+                <div class="lg:col-span-2 bg-industrial-800 border border-industrial-700 rounded-xl p-5 shadow-lg space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-industrial-700 pb-3">
+                        <div>
+                            <h3 class="font-bold text-white text-base">Inventário de Ferramentas & Inspeção Técnica</h3>
+                            <p class="text-xs text-gray-400">Selecione uma ferramenta para registrar inspeção de campo.</p>
+                        </div>
+                    </div>
+
+                    <div id="toolsListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Dynamic Tool Cards -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB: CHECKLIST DIÁRIO ================= -->
+        <section id="sec-checklist" class="tab-content hidden space-y-6">
+            <div class="bg-industrial-800 border border-industrial-700 rounded-xl p-5 shadow-lg max-w-4xl mx-auto space-y-6">
+                <div class="border-b border-industrial-700 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-white text-lg flex items-center gap-2">
+                            <i data-lucide="clipboard-check" class="w-6 h-6 text-amber-500"></i> Checklist Diário Sandvik Top Hammer Subterrâneo
+                        </h3>
+                        <p class="text-xs text-gray-400">Verificações de campo para eliminação de desvios e avarias em perfurações de mineração.</p>
+                    </div>
+                    <button onclick="resetChecklist()" class="px-3 py-1.5 bg-industrial-700 hover:bg-industrial-600 text-xs text-gray-300 rounded-lg flex items-center gap-1.5 transition-colors self-start sm:self-auto">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reiniciar Checklist
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Category 1 -->
+                    <div class="bg-industrial-900/60 border border-industrial-700 rounded-lg p-4">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase font-mono tracking-wider mb-3 flex items-center gap-2">
+                            <i data-lucide="wrench" class="w-4 h-4"></i> 1. Condição de Roscas & Alinhamento
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Desalinhamento no passe de rosca</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Passe de rosca incorreto (pulando)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Inspeção da rosca: primeiros filetes da rosca macho danificados</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Haste flambando durante avanço</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Tubos torqueando excessivamente</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Category 2 -->
+                    <div class="bg-industrial-900/60 border border-industrial-700 rounded-lg p-4">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase font-mono tracking-wider mb-3 flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-4 h-4"></i> 2. Parâmetros Operacionais (Avanço, Percussão e Limpeza)
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Excesso de AVANÇO / PERCUSSÃO / LIMPEZA</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Falta de AVANÇO / PERCUSSÃO / LIMPEZA</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Dificuldade no emboque do furo</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Desvio de furo detectado</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Category 3 -->
+                    <div class="bg-industrial-900/60 border border-industrial-700 rounded-lg p-4">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase font-mono tracking-wider mb-3 flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> 3. Equipamento, Válvulas & Estrutura
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Vazamentos (hidráulicos, água ou ar de limpeza)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Falta de ancoramento (sapata / macaco da viga)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Interferência ou falha no painel / interface eletrônica (GUI)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Calha suja ou obstruída por detritos de rocha</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 hover:bg-industrial-800 rounded-md cursor-pointer transition-colors">
+                                <input type="checkbox" class="chk-item w-4 h-4 text-amber-500 rounded border-industrial-600 focus:ring-0 bg-industrial-900" onchange="updateChecklistProgress()">
+                                <span>Válvulas hidráulicas ou eletroválvulas não funcionando</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress & Save Bar -->
+                <div class="bg-industrial-900 p-4 rounded-xl border border-industrial-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="w-full sm:w-auto">
+                        <div class="text-xs text-gray-400 font-mono uppercase">Conclusão do Checklist</div>
+                        <div class="flex items-center gap-3 mt-1">
+                            <div class="w-48 bg-industrial-700 h-3 rounded-full overflow-hidden">
+                                <div id="checklistProgressBar" class="bg-amber-500 h-full w-0 transition-all duration-300"></div>
+                            </div>
+                            <span id="checklistPercent" class="text-sm font-bold text-amber-400 mono">0%</span>
+                        </div>
+                    </div>
+                    <button onclick="saveChecklistLog()" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-sm rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Registrar Checklist no Histórico
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB: HISTÓRICO & EXPORTAÇÃO ================= -->
+        <section id="sec-historico" class="tab-content hidden space-y-6">
+            <!-- Action Toolbar (OCULTO NA IMPRESSÃO PDF) -->
+            <div class="no-print bg-industrial-800 border border-industrial-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="database" class="w-5 h-5 text-amber-500"></i>
+                    <h3 class="font-bold text-white text-base">Gerenciamento de Dados & Relatórios</h3>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="exportCSV()" class="px-3.5 py-2 bg-industrial-700 hover:bg-industrial-600 text-amber-400 border border-amber-500/30 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all">
+                        <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+                    </button>
+                    <button onclick="triggerPrintReport()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-black text-xs font-extrabold rounded-lg flex items-center gap-1.5 transition-all shadow-md">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Gerar Relatório PDF / Imprimir
+                    </button>
+                    <button onclick="exportJSONBackup()" class="px-3.5 py-2 bg-industrial-700 hover:bg-industrial-600 text-gray-300 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-all">
+                        <i data-lucide="file-json" class="w-4 h-4"></i> Backup JSON
+                    </button>
+                    <label class="px-3.5 py-2 bg-industrial-700 hover:bg-industrial-600 text-gray-300 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-all cursor-pointer">
+                        <i data-lucide="upload" class="w-4 h-4"></i> Restaurar
+                        <input type="file" id="importJsonInput" accept=".json" onchange="importJSONBackup(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Printable Technical Summary Report Preview -->
+            <div id="printableReport" class="print-card bg-industrial-800 border border-industrial-700 rounded-xl p-6 shadow-xl space-y-6">
+                <div class="border-b border-industrial-700 pb-4 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-6 h-6 text-amber-500"></i> RELATÓRIO TÉCNICO DE PERFURAÇÃO & CONSUMÍVEIS
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1">Gerado por alik.miranda@sandvik.com</p>
+                    </div>
+                    <div class="text-right text-xs text-gray-400 font-mono">
+                        <div>Data: <span id="repDate" class="text-gray-200">--/--/----</span></div>
+                        <div>Equipamento: <span id="repRig" class="text-amber-400 font-bold">---</span></div>
+                    </div>
+                </div>
+
+                <!-- Section: Summary -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="p-3 bg-industrial-900 border border-industrial-700 rounded-lg">
+                        <span class="text-[10px] uppercase text-gray-400 font-mono block">Metragem Total Perfurada</span>
+                        <span id="repTotalMeters" class="text-lg font-bold text-emerald-400 mono">0.0 m</span>
+                    </div>
+                    <div class="p-3 bg-industrial-900 border border-industrial-700 rounded-lg">
+                        <span class="text-[10px] uppercase text-gray-400 font-mono block">Média de ROP</span>
+                        <span id="repAvgRop" class="text-lg font-bold text-amber-400 mono">0.0 m/h</span>
+                    </div>
+                    <div class="p-3 bg-industrial-900 border border-industrial-700 rounded-lg">
+                        <span class="text-[10px] uppercase text-gray-400 font-mono block">Total de Furos</span>
+                        <span id="repCountHoles" class="text-lg font-bold text-white mono">0</span>
+                    </div>
+                </div>
+
+                <!-- Detailed Tables in Report -->
+                <div class="space-y-4">
+                    <h4 class="font-bold text-sm text-amber-400 uppercase tracking-wider font-mono">1. Histórico de Perfuração ROP</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-industrial-900 text-gray-400 font-mono">
+                                <tr>
+                                    <th class="p-2">Hora</th>
+                                    <th class="p-2">Furo</th>
+                                    <th class="p-2">Prof. (m)</th>
+                                    <th class="p-2">Tempo</th>
+                                    <th class="p-2">ROP (m/h)</th>
+                                    <th class="p-2">Perc./Av./Rot. (Bar)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repHolesTable" class="divide-y divide-industrial-700">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h4 class="font-bold text-sm text-amber-400 uppercase tracking-wider font-mono">2. Estado dos Consumíveis & Inspeções</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-industrial-900 text-gray-400 font-mono">
+                                <tr>
+                                    <th class="p-2">Part Number</th>
+                                    <th class="p-2">Nº Série</th>
+                                    <th class="p-2">Tipo</th>
+                                    <th class="p-2">Rosca</th>
+                                    <th class="p-2">Acumulado (m)</th>
+                                    <th class="p-2">Estado Visual</th>
+                                    <th class="p-2">Modo de Falha / Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repToolsTable" class="divide-y divide-industrial-700">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Mobile Navigation Bar -->
+    <nav class="no-print md:hidden fixed bottom-0 left-0 right-0 bg-industrial-800 border-t border-industrial-700 z-40 px-2 py-1.5 flex justify-around items-center">
+        <button onclick="switchTab('dashboard')" id="mob-tab-dashboard" class="flex flex-col items-center py-1 px-2 text-amber-400">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            <span class="text-[10px] mt-0.5 font-medium">Dash</span>
+        </button>
+        <button onclick="switchTab('furos')" id="mob-tab-furos" class="flex flex-col items-center py-1 px-2 text-gray-400">
+            <i data-lucide="gauge" class="w-5 h-5"></i>
+            <span class="text-[10px] mt-0.5 font-medium">ROP</span>
+        </button>
+        <button onclick="switchTab('ferramentas')" id="mob-tab-ferramentas" class="flex flex-col items-center py-1 px-2 text-gray-400">
+            <i data-lucide="wrench" class="w-5 h-5"></i>
+            <span class="text-[10px] mt-0.5 font-medium">Inspeção</span>
+        </button>
+        <button onclick="switchTab('checklist')" id="mob-tab-checklist" class="flex flex-col items-center py-1 px-2 text-gray-400">
+            <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+            <span class="text-[10px] mt-0.5 font-medium">Checklist</span>
+        </button>
+        <button onclick="switchTab('historico')" id="mob-tab-historico" class="flex flex-col items-center py-1 px-2 text-gray-400">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+            <span class="text-[10px] mt-0.5 font-medium">Relatórios</span>
+        </button>
+    </nav>
+
+    <!-- MODAL: Gerenciador de Perfurações (Drill Fleet Modal) -->
+    <div id="rigModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-industrial-800 border border-industrial-700 rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-industrial-700 pb-3">
+                <h3 class="font-bold text-white text-base flex items-center gap-2">
+                    <i data-lucide="truck" class="w-5 h-5 text-amber-500"></i> Cadastrar / Gerenciar Perfurações
+                </h3>
+                <button onclick="closeRigModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form id="rigForm" onsubmit="saveRig(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Nome / Tag da Máquina *</label>
+                    <input type="text" id="rigTag" required placeholder="Ex: Sandvik DL421-04" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-300 mb-1">Modelo</label>
+                        <input type="text" id="rigModel" placeholder="Ex: DL421 / DD321" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-300 mb-1">Nível / Gallerie</label>
+                        <input type="text" id="rigLevel" placeholder="Ex: Nível 850m" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-sm rounded-lg transition-all">
+                    Adicionar Equipamento
+                </button>
+            </form>
+
+            <div class="border-t border-industrial-700 pt-3">
+                <span class="text-xs font-bold text-gray-400 uppercase font-mono block mb-2">Equipamentos Cadastrados</span>
+                <div id="rigsList" class="space-y-2 max-h-40 overflow-y-auto">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Inspeção Rápida de Ferramenta -->
+    <div id="inspectModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-industrial-800 border border-industrial-700 rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-industrial-700 pb-3">
+                <div>
+                    <h3 class="font-bold text-white text-base flex items-center gap-2">
+                        <i data-lucide="search" class="w-5 h-5 text-amber-500"></i> Registrar Inspeção Técnica Sandvik
+                    </h3>
+                    <p id="inspectToolTitle" class="text-xs text-amber-400 font-mono mt-0.5">Série: ---</p>
+                </div>
+                <button onclick="closeInspectModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form id="inspectForm" onsubmit="saveInspection(event)" class="space-y-4">
+                <input type="hidden" id="inspectToolId">
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Condição / Estado Visual *</label>
+                    <select id="inspectCondition" required class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                        <option value="Em Boas Condições">Em Boas Condições (Operacional)</option>
+                        <option value="Necessita Afiação">Necessita Afiação (Regrind)</option>
+                        <option value="Desgaste Severo">Desgaste Severo (Atenção)</option>
+                        <option value="Descartada / Fim de Vida">Descartada / Fim de Vida Útil</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Modo de Falha Provável (Top Hammer Sandvik) *</label>
+                    <select id="inspectFailureMode" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                        <option value="Sem Falha">Sem Falha / Operação Normal</option>
+                        <option value="Desgaste de Diâmetro (Gauge Wear)">Desgaste excessivo de diâmetro (Bit/Alargador)</option>
+                        <option value="Quebra de Insertos (Button Breakage)">Quebra/Perda de insertos de metal duro (Buttons)</option>
+                        <option value="Fadiga de Rosca (Thread Fatigue)">Fadiga de rosca / Trinca na rosca (Macho/Fêmea)</option>
+                        <option value="Descascamento / Pitting">Descascamento de aço / Pitting por impacto/cavitação</option>
+                        <option value="Fratura por Flexão (Flambagem)">Quebra de corpo / Fratura transversal por flexão (Flambagem)</option>
+                        <option value="Engripamento de Rosca">Engripamento de rosca / Fundição por falta de graxa</option>
+                        <option value="Desgaste de Estria do Shank">Desgaste prematuro da estria do punho (Shank Spline Wear)</option>
+                        <option value="Dano nos Primeiros Filetes">Dano mecânico nos primeiros filetes da rosca</option>
+                        <option value="Erosão por Fluidos">Erosão por fluido de lavagem / Lavagem deficiente</option>
+                        <option value="Sobreaquecimento Operacional">Sobreaquecimento por avanço excessivo ou percussão em seco</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Adicionar Metragem Perfurada (m)</label>
+                    <input type="number" id="inspectAddMeters" placeholder="Ex: 24.5" class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mono">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Observações Técnicas de Campo</label>
+                    <textarea id="inspectNotes" rows="2" placeholder="Ex: Filete de rosca danificado no 1º passo por passe desalinhado..." class="w-full bg-industrial-900 border border-industrial-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-sm rounded-lg transition-all shadow-md">
+                    Salvar Inspeção
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast / Notification UI -->
+    <div id="toast" class="fixed bottom-20 md:bottom-6 right-6 bg-industrial-800 border border-amber-500/50 text-white px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center space-x-3 z-50">
+        <i data-lucide="info" class="w-5 h-5 text-amber-500"></i>
+        <span id="toastMsg" class="text-xs font-semibold">Notificação</span>
+    </div>
+
+    <!-- Application Engine Script -->
+    <script>
+        // Default seed state
+        const DEFAULT_RIGS = [
+            { id: 'rig_1', tag: 'Sandvik DL421-01', model: 'DL421', level: 'Nível 850m' },
+            { id: 'rig_2', tag: 'Sandvik DD321-02', model: 'DD321', level: 'Nível 920m' }
+        ];
+
+        let state = {
+            activeRigId: '',
+            rigs: [],
+            holes: [],
+            tools: [],
+            checklistLogs: []
+        };
+
+        // Initialize Application State
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStorage();
+            if (window.lucide) lucide.createIcons();
+            document.getElementById('repDate').textContent = new Date().toLocaleDateString('pt-BR');
+        });
+
+        function loadStorage() {
+            const localRigs = localStorage.getItem('rt_rigs');
+            state.rigs = localRigs ? JSON.parse(localRigs) : DEFAULT_RIGS;
+
+            const localActive = localStorage.getItem('rt_active_rig');
+            state.activeRigId = localActive || (state.rigs[0] ? state.rigs[0].id : '');
+
+            const localHoles = localStorage.getItem('rt_holes');
+            state.holes = localHoles ? JSON.parse(localHoles) : [];
+
+            const localTools = localStorage.getItem('rt_tools');
+            state.tools = localTools ? JSON.parse(localTools) : [];
+
+            const localCheck = localStorage.getItem('rt_checklists');
+            state.checklistLogs = localCheck ? JSON.parse(localCheck) : [];
+
+            saveStorage();
+            renderAll();
+        }
+
+        function saveStorage() {
+            localStorage.setItem('rt_rigs', JSON.stringify(state.rigs));
+            localStorage.setItem('rt_active_rig', state.activeRigId);
+            localStorage.setItem('rt_holes', JSON.stringify(state.holes));
+            localStorage.setItem('rt_tools', JSON.stringify(state.tools));
+            localStorage.setItem('rt_checklists', JSON.stringify(state.checklistLogs));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Tab Navigation Logic
+        function switchTab(tabKey) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`sec-${tabKey}`).classList.remove('hidden');
+
+            // Desktop Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-amber-400', 'bg-industrial-800', 'border', 'border-amber-500/30');
+                btn.classList.add('text-gray-400');
+            });
+            const activeDesktop = document.getElementById(`tab-${tabKey}`);
+            if (activeDesktop) {
+                activeDesktop.classList.remove('text-gray-400');
+                activeDesktop.classList.add('text-amber-400', 'bg-industrial-800', 'border', 'border-amber-500/30');
+            }
+
+            // Mobile Buttons
+            const mobBtns = document.querySelectorAll('nav button');
+            mobBtns.forEach(btn => btn.classList.replace('text-amber-400', 'text-gray-400'));
+            const activeMobile = document.getElementById(`mob-tab-${tabKey}`);
+            if (activeMobile) {
+                activeMobile.classList.replace('text-gray-400', 'text-amber-400');
+            }
+
+            if (tabKey === 'historico') renderReport();
+        }
+
+        // Fleet / Rig Management
+        function renderRigSelect() {
+            const select = document.getElementById('activeRigSelect');
+            select.innerHTML = '';
+            state.rigs.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = `${r.tag} (${r.level || 'Sem Nível'})`;
+                if (r.id === state.activeRigId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            // Update Dash Rig Info
+            const current = state.rigs.find(r => r.id === state.activeRigId);
+            if (current) {
+                document.getElementById('dashRigName').textContent = current.tag;
+                document.getElementById('dashRigMeta').textContent = `Nível: ${current.level || 'N/A'} | Modelo: ${current.model || 'N/A'}`;
+                document.getElementById('repRig').textContent = current.tag;
+            } else {
+                document.getElementById('dashRigName').textContent = 'Nenhuma Selecionada';
+                document.getElementById('dashRigMeta').textContent = 'Cadastre uma máquina no ícone de engrenagem';
+            }
+        }
+
+        function changeActiveRig(val) {
+            state.activeRigId = val;
+            saveStorage();
+            renderAll();
+            showToast('Equipamento ativo alterado!');
+        }
+
+        function openRigModal() {
+            renderRigsList();
+            document.getElementById('rigModal').classList.remove('hidden');
+        }
+
+        function closeRigModal() {
+            document.getElementById('rigModal').classList.add('hidden');
+        }
+
+        function saveRig(e) {
+            e.preventDefault();
+            const tag = document.getElementById('rigTag').value.trim();
+            const model = document.getElementById('rigModel').value.trim();
+            const level = document.getElementById('rigLevel').value.trim();
+
+            const newRig = {
+                id: 'rig_' + Date.now(),
+                tag,
+                model,
+                level
+            };
+            state.rigs.push(newRig);
+            if (!state.activeRigId) state.activeRigId = newRig.id;
+
+            saveStorage();
+            renderRigSelect();
+            renderRigsList();
+            document.getElementById('rigForm').reset();
+            showToast('Equipamento adicionado!');
+        }
+
+        function removeRig(id) {
+            if (state.rigs.length <= 1) {
+                alert('É necessário manter ao menos um equipamento cadastrado.');
+                return;
+            }
+            state.rigs = state.rigs.filter(r => r.id !== id);
+            if (state.activeRigId === id) state.activeRigId = state.rigs[0].id;
+            saveStorage();
+            renderRigSelect();
+            renderRigsList();
+            showToast('Equipamento removido.');
+        }
+
+        function renderRigsList() {
+            const container = document.getElementById('rigsList');
+            container.innerHTML = '';
+            state.rigs.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2 bg-industrial-900 rounded-lg text-xs border border-industrial-700';
+                item.innerHTML = `
+                    <div>
+                        <div class="font-bold text-white">${r.tag}</div>
+                        <div class="text-[10px] text-gray-400">${r.model || ''} - ${r.level || ''}</div>
+                    </div>
+                    <button onclick="removeRig('${r.id}')" class="text-rose-400 hover:text-rose-300 p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Furos & ROP Calculations
+        function calculateROP() {
+            const depth = parseFloat(document.getElementById('holeDepth').value) || 0;
+            const min = parseFloat(document.getElementById('holeMin').value) || 0;
+            const sec = parseFloat(document.getElementById('holeSec').value) || 0;
+
+            const totalMinutes = min + (sec / 60);
+            const totalSeconds = (min * 60) + sec;
+
+            if (depth > 0 && totalMinutes > 0) {
+                const rop = (depth / totalMinutes) * 60; // m/h
+                const spm = totalSeconds / depth; // s/m
+
+                document.getElementById('calcRopVal').textContent = `${rop.toFixed(1)} m/h`;
+                document.getElementById('calcSpmVal').textContent = `${spm.toFixed(0)} s/m`;
+            } else {
+                document.getElementById('calcRopVal').textContent = `0.0 m/h`;
+                document.getElementById('calcSpmVal').textContent = `0 s/m`;
+            }
+        }
+
+        function saveHole(e) {
+            e.preventDefault();
+            if (!state.activeRigId) {
+                alert('Selecione ou adicione um equipamento primeiro.');
+                return;
+            }
+
+            const holeId = document.getElementById('holeId').value.trim();
+            const depth = parseFloat(document.getElementById('holeDepth').value);
+            const min = parseInt(document.getElementById('holeMin').value) || 0;
+            const sec = parseInt(document.getElementById('holeSec').value) || 0;
+            const perc = document.getElementById('pressPerc').value;
+            const feed = document.getElementById('pressFeed').value;
+            const rot = document.getElementById('pressRot').value;
+            const toolId = document.getElementById('holeToolLink').value;
+
+            const totalMinutes = min + (sec / 60);
+            const rop = totalMinutes > 0 ? ((depth / totalMinutes) * 60).toFixed(1) : 0;
+
+            const newHole = {
+                id: 'hole_' + Date.now(),
+                rigId: state.activeRigId,
+                date: new Date().toLocaleString('pt-BR'),
+                holeId,
+                depth,
+                min,
+                sec,
+                rop: parseFloat(rop),
+                pressures: { perc, feed, rot },
+                toolId
+            };
+
+            state.holes.unshift(newHole);
+
+            // If a tool was linked, add meters automatically
+            if (toolId) {
+                const t = state.tools.find(tool => tool.id === toolId);
+                if (t) {
+                    t.meters = (parseFloat(t.meters) || 0) + depth;
+                }
+            }
+
+            saveStorage();
+            document.getElementById('holeForm').reset();
+            calculateROP();
+            renderAll();
+            showToast('Furo cadastrado com sucesso!');
+        }
+
+        function deleteHole(id) {
+            state.holes = state.holes.filter(h => h.id !== id);
+            saveStorage();
+            renderAll();
+            showToast('Registro excluído.');
+        }
+
+        function renderHoles() {
+            const tbody = document.getElementById('holesTableBody');
+            const search = document.getElementById('searchHole').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            const filtered = state.holes.filter(h => 
+                h.rigId === state.activeRigId && 
+                h.holeId.toLowerCase().includes(search)
+            );
+
+            const emptyState = document.getElementById('emptyHolesState');
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(h => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-industrial-700/50 transition-colors';
+                tr.innerHTML = `
+                    <td class="p-3 text-gray-400 font-mono text-[11px]">${h.date.split(' ')[1] || h.date}</td>
+                    <td class="p-3 font-bold text-white">${h.holeId}</td>
+                    <td class="p-3 mono text-gray-200">${h.depth} m</td>
+                    <td class="p-3 mono text-gray-300">${h.min}m ${h.sec}s</td>
+                    <td class="p-3 font-extrabold text-amber-400 mono">${h.rop} m/h</td>
+                    <td class="p-3 font-mono text-gray-400 text-[11px]">${h.pressures.perc || '-'}/${h.pressures.feed || '-'}/${h.pressures.rot || '-'}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteHole('${h.id}')" class="text-gray-500 hover:text-rose-400 p-1">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Consumables & Inspections
+        function saveTool(e) {
+            e.preventDefault();
+            const serial = document.getElementById('toolSerial').value.trim();
+            const pn = document.getElementById('toolPN').value.trim();
+            const type = document.getElementById('toolType').value;
+            const thread = document.getElementById('toolThread').value;
+            const diameter = document.getElementById('toolDiameter').value;
+            const meters = parseFloat(document.getElementById('toolMeters').value) || 0;
+
+            const newTool = {
+                id: 'tool_' + Date.now(),
+                rigId: state.activeRigId,
+                serial,
+                pn,
+                type,
+                thread,
+                diameter,
+                meters,
+                condition: 'Em Boas Condições',
+                failureMode: 'Sem Falha',
+                history: [{
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    condition: 'Cadastro Inicial',
+                    failureMode: 'N/A',
+                    addedMeters: meters,
+                    notes: 'Ferramenta adicionada ao inventário.'
+                }]
+            };
+
+            state.tools.push(newTool);
+            saveStorage();
+            document.getElementById('toolForm').reset();
+            renderAll();
+            showToast('Ferramenta cadastrada!');
+        }
+
+        function deleteTool(id) {
+            state.tools = state.tools.filter(t => t.id !== id);
+            saveStorage();
+            renderAll();
+            showToast('Ferramenta removida.');
+        }
+
+        function openInspectModal(toolId) {
+            const tool = state.tools.find(t => t.id === toolId);
+            if (!tool) return;
+
+            document.getElementById('inspectToolId').value = tool.id;
+            document.getElementById('inspectToolTitle').textContent = `Nº Série: ${tool.serial} (${tool.type})`;
+            document.getElementById('inspectCondition').value = tool.condition || 'Em Boas Condições';
+            document.getElementById('inspectFailureMode').value = tool.failureMode || 'Sem Falha';
+            document.getElementById('inspectAddMeters').value = '';
+            document.getElementById('inspectNotes').value = '';
+
+            document.getElementById('inspectModal').classList.remove('hidden');
+        }
+
+        function closeInspectModal() {
+            document.getElementById('inspectModal').classList.add('hidden');
+        }
+
+        function saveInspection(e) {
+            e.preventDefault();
+            const id = document.getElementById('inspectToolId').value;
+            const condition = document.getElementById('inspectCondition').value;
+            const failureMode = document.getElementById('inspectFailureMode').value;
+            const addMeters = parseFloat(document.getElementById('inspectAddMeters').value) || 0;
+            const notes = document.getElementById('inspectNotes').value.trim();
+
+            const tool = state.tools.find(t => t.id === id);
+            if (tool) {
+                tool.condition = condition;
+                tool.failureMode = failureMode;
+                tool.meters += addMeters;
+
+                tool.history.push({
+                    date: new Date().toLocaleString('pt-BR'),
+                    condition,
+                    failureMode,
+                    addedMeters: addMeters,
+                    notes
+                });
+
+                saveStorage();
+                renderAll();
+                closeInspectModal();
+                showToast('Inspeção registrada!');
+            }
+        }
+
+        function renderTools() {
+            const container = document.getElementById('toolsListContainer');
+            const toolSelect = document.getElementById('holeToolLink');
+            container.innerHTML = '';
+
+            toolSelect.innerHTML = '<option value="">Sem vínculo específico</option>';
+
+            const currentRigTools = state.tools.filter(t => t.rigId === state.activeRigId);
+
+            currentRigTools.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `${t.pn ? t.pn + ' | ' : ''}${t.serial} - ${t.type} (${t.thread})`;
+                toolSelect.appendChild(opt);
+
+                let statusColor = 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10';
+                if (t.condition === 'Necessita Afiação') statusColor = 'border-amber-500/40 text-amber-400 bg-amber-500/10';
+                if (t.condition === 'Desgaste Severo' || t.condition === 'Descartada / Fim de Vida') statusColor = 'border-rose-500/40 text-rose-400 bg-rose-500/10';
+
+                const card = document.createElement('div');
+                card.className = 'bg-industrial-900 border border-industrial-700 rounded-xl p-4 space-y-3 flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="text-[10px] font-mono text-gray-400 uppercase">${t.type} · PN: ${t.pn || 'N/A'}</span>
+                                <h4 class="font-extrabold text-white text-base mono">${t.serial}</h4>
+                            </div>
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded border ${statusColor}">
+                                ${t.condition}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-3 text-xs text-gray-300">
+                            <div><span class="text-gray-400">Rosca:</span> <strong class="text-white">${t.thread}</strong></div>
+                            <div><span class="text-gray-400">Diâmetro:</span> <strong class="text-white">${t.diameter ? t.diameter + 'mm' : '-'}</strong></div>
+                            <div class="col-span-2"><span class="text-gray-400">Modo de Falha:</span> <strong class="text-amber-400">${t.failureMode || 'Nenhum'}</strong></div>
+                        </div>
+                        <div class="mt-3 bg-industrial-800 p-2 rounded-lg flex items-center justify-between border border-industrial-700">
+                            <span class="text-xs text-gray-400 font-mono uppercase">Acumulado</span>
+                            <span class="text-sm font-black text-emerald-400 mono">${t.meters.toFixed(1)} m</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 pt-2 border-t border-industrial-700">
+                        <button onclick="openInspectModal('${t.id}')" class="flex-1 py-1.5 bg-industrial-700 hover:bg-industrial-600 text-amber-400 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1">
+                            <i data-lucide="search" class="w-3.5 h-3.5"></i> Inspecionar
+                        </button>
+                        <button onclick="deleteTool('${t.id}')" class="p-1.5 text-gray-500 hover:text-rose-400">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            if (currentRigTools.length === 0) {
+                container.innerHTML = `<div class="col-span-2 py-8 text-center text-gray-500 text-xs">Nenhum consumível cadastrado para esta perfuratriz.</div>`;
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Checklist Methods
+        function updateChecklistProgress() {
+            const total = document.querySelectorAll('.chk-item').length;
+            const checked = document.querySelectorAll('.chk-item:checked').length;
+            const pct = Math.round((checked / total) * 100);
+
+            document.getElementById('checklistProgressBar').style.width = `${pct}%`;
+            document.getElementById('checklistPercent').textContent = `${pct}%`;
+        }
+
+        function resetChecklist() {
+            document.querySelectorAll('.chk-item').forEach(c => c.checked = false);
+            updateChecklistProgress();
+            showToast('Checklist reiniciado.');
+        }
+
+        function saveChecklistLog() {
+            const checked = document.querySelectorAll('.chk-item:checked').length;
+            const total = document.querySelectorAll('.chk-item').length;
+
+            const log = {
+                id: 'check_' + Date.now(),
+                rigId: state.activeRigId,
+                date: new Date().toLocaleString('pt-BR'),
+                score: `${checked}/${total}`,
+                pct: Math.round((checked / total) * 100)
+            };
+
+            state.checklistLogs.unshift(log);
+            saveStorage();
+            showToast('Checklist salvo com sucesso!');
+        }
+
+        // Render Dashboard KPIs & Data
+        function renderDashboard() {
+            const currentHoles = state.holes.filter(h => h.rigId === state.activeRigId);
+            const currentTools = state.tools.filter(t => t.rigId === state.activeRigId);
+
+            // KPI 1: Avg ROP
+            const totalRopSum = currentHoles.reduce((acc, h) => acc + (h.rop || 0), 0);
+            const avgRop = currentHoles.length > 0 ? (totalRopSum / currentHoles.length).toFixed(1) : '0.0';
+            document.getElementById('kpiAvgRop').textContent = `${avgRop} m/h`;
+
+            // KPI 2: Total Drilled Meters
+            const totalMeters = currentHoles.reduce((acc, h) => acc + (h.depth || 0), 0);
+            document.getElementById('kpiTotalMeters').textContent = `${totalMeters.toFixed(1)} m`;
+
+            // KPI 3: Active Tools Count
+            document.getElementById('kpiActiveTools').textContent = currentTools.length;
+
+            // KPI 4: Alert Count (Discarded or Needs Sharpening)
+            const alerts = currentTools.filter(t => t.condition === 'Necessita Afiação' || t.condition === 'Desgaste Severo' || t.condition === 'Descartada / Fim de Vida').length;
+            document.getElementById('kpiAlertCount').textContent = alerts;
+
+            // Dash Recent Holes Widget
+            const recentContainer = document.getElementById('dashRecentHoles');
+            recentContainer.innerHTML = '';
+            currentHoles.slice(0, 4).forEach(h => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2.5 bg-industrial-900 rounded-lg text-xs border border-industrial-700/60';
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <div>
+                            <span class="font-bold text-white">${h.holeId}</span>
+                            <span class="text-gray-400 text-[10px] block">${h.depth}m em ${h.min}m${h.sec}s</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black text-amber-400 mono">${h.rop} m/h</span>
+                    </div>
+                `;
+                recentContainer.appendChild(item);
+            });
+            if (currentHoles.length === 0) {
+                recentContainer.innerHTML = `<div class="text-gray-500 text-xs py-4 text-center">Sem perfurações recentes.</div>`;
+            }
+
+            // Dash Tools Summary Widget
+            const toolsContainer = document.getElementById('dashToolsSummary');
+            toolsContainer.innerHTML = '';
+            currentTools.slice(0, 4).forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2.5 bg-industrial-900 rounded-lg text-xs border border-industrial-700/60';
+                item.innerHTML = `
+                    <div>
+                        <span class="font-bold text-white">${t.serial}</span>
+                        <span class="text-gray-400 text-[10px] block">${t.type} (${t.thread})</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] px-2 py-0.5 rounded font-mono bg-industrial-800 text-gray-300 border border-industrial-700">${t.condition}</span>
+                    </div>
+                `;
+                toolsContainer.appendChild(item);
+            });
+            if (currentTools.length === 0) {
+                toolsContainer.innerHTML = `<div class="text-gray-500 text-xs py-4 text-center">Sem consumíveis cadastrados.</div>`;
+            }
+        }
+
+        // Render Technical Printable Report
+        function renderReport() {
+            const currentHoles = state.holes.filter(h => h.rigId === state.activeRigId);
+            const currentTools = state.tools.filter(t => t.rigId === state.activeRigId);
+
+            const totalMeters = currentHoles.reduce((acc, h) => acc + (h.depth || 0), 0);
+            const totalRopSum = currentHoles.reduce((acc, h) => acc + (h.rop || 0), 0);
+            const avgRop = currentHoles.length > 0 ? (totalRopSum / currentHoles.length).toFixed(1) : '0.0';
+
+            document.getElementById('repTotalMeters').textContent = `${totalMeters.toFixed(1)} m`;
+            document.getElementById('repAvgRop').textContent = `${avgRop} m/h`;
+            document.getElementById('repCountHoles').textContent = currentHoles.length;
+
+            const tbodyHoles = document.getElementById('repHolesTable');
+            tbodyHoles.innerHTML = '';
+            currentHoles.forEach(h => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2 text-gray-400">${h.date}</td>
+                    <td class="p-2 font-bold">${h.holeId}</td>
+                    <td class="p-2">${h.depth}</td>
+                    <td class="p-2">${h.min}m ${h.sec}s</td>
+                    <td class="p-2 font-bold text-amber-500">${h.rop}</td>
+                    <td class="p-2">${h.pressures.perc || '-'}/${h.pressures.feed || '-'}/${h.pressures.rot || '-'}</td>
+                `;
+                tbodyHoles.appendChild(tr);
+            });
+
+            const tbodyTools = document.getElementById('repToolsTable');
+            tbodyTools.innerHTML = '';
+            currentTools.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2 font-mono text-gray-300 font-bold">${t.pn || '-'}</td>
+                    <td class="p-2 font-mono font-bold">${t.serial}</td>
+                    <td class="p-2">${t.type}</td>
+                    <td class="p-2">${t.thread}</td>
+                    <td class="p-2 font-bold">${t.meters.toFixed(1)} m</td>
+                    <td class="p-2">${t.condition}</td>
+                    <td class="p-2">${t.failureMode || 'Nenhum'}</td>
+                `;
+                tbodyTools.appendChild(tr);
+            });
+        }
+
+        // Export Data: CSV
+        function exportCSV() {
+            const currentHoles = state.holes.filter(h => h.rigId === state.activeRigId);
+            const currentTools = state.tools.filter(t => t.rigId === state.activeRigId);
+
+            if (currentHoles.length === 0 && currentTools.length === 0) {
+                alert('Nenhum dado para exportar.');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "[HISTORICO DE PERFURACAO]\n";
+            csvContent += "Data/Hora,Furo ID,Profundidade (m),Minutos,Segundos,ROP (m/h),Percussao (Bar),Avanco (Bar),Rotacao (Bar)\n";
+
+            currentHoles.forEach(h => {
+                csvContent += `"${h.date}","${h.holeId}",${h.depth},${h.min},${h.sec},${h.rop},"${h.pressures.perc || ''}","${h.pressures.feed || ''}","${h.pressures.rot || ''}"\n`;
+            });
+
+            csvContent += "\n[CONSUMIVEIS E FERRAMENTAS]\n";
+            csvContent += "Part Number (PN),Numero de Serie,Tipo,Rosca,Diametro (mm),Metros Acumulados,Condicao,Modo de Falha\n";
+
+            currentTools.forEach(t => {
+                csvContent += `"${t.pn || ''}","${t.serial}","${t.type}","${t.thread}","${t.diameter || ''}",${t.meters.toFixed(1)},"${t.condition}","${t.failureMode || ''}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `RockTools_Sandvik_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Print Report / PDF
+        function triggerPrintReport() {
+            window.print();
+        }
+
+        // Export & Import Backup JSON
+        function exportJSONBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `RockTools_Backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importJSONBackup(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.rigs && parsed.holes) {
+                        state = parsed;
+                        saveStorage();
+                        renderAll();
+                        showToast('Backup restaurado com sucesso!');
+                    } else {
+                        alert('Formato de arquivo JSON inválido.');
+                    }
+                } catch(err) {
+                    alert('Erro ao carregar o arquivo JSON.');
+                }
+            };
+            fileReader.readAsText(event.target.files[0]);
+        }
+
+        // Render Master Call
+        function renderAll() {
+            renderRigSelect();
+            renderHoles();
+            renderTools();
+            renderDashboard();
+            if (window.lucide) lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
